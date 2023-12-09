@@ -1,11 +1,9 @@
 __all__ = [
     'get_data_by_ticker',
     'get_stock_data',
-    'scaled_data_and_scaler',
-    'scale_data',
-    'inverse_scaling_data',
+    'perform_scaling',
+    # 'scale_train_data',
     'adjust_X_train_data',
-    'load_train_test_data_from_tickers',
     'prepare_data_for_model'
 ]
 
@@ -52,24 +50,23 @@ def perform_scaling(series_data: pd.Series) -> pd.Series:
     return scaler.transform(np.array(series_data).reshape(-1, 1)), scaler
 
 
-def scale_train_data(stock_data: pd.DataFrame, name_feature_to_predict: str) -> pd.DataFrame:
-    get_index = pd.to_datetime(stock_data.index)
-    normalized_data = pd.DataFrame(index=get_index, columns=stock_data.columns)
-    for column in normalized_data.columns:
-        if str(column)==name_feature_to_predict:
-            normalized_data[str(column)], scaler = perform_scaling(stock_data.loc[:, str(column)])
-            return_scaler = scaler
-        else:
-            normalized_data[str(column)], scaler = perform_scaling(stock_data.loc[:, str(column)])
+# def scale_train_data(stock_data: pd.DataFrame, name_feature_to_predict: str) -> pd.DataFrame:
+#     """
+#     Scale whole dataset - without sense
+#     """
+#     get_index = pd.to_datetime(stock_data.index)
+#     normalized_data = pd.DataFrame(index=get_index, columns=stock_data.columns)
+#     for column in normalized_data.columns:
+#         if str(column)==name_feature_to_predict:
+#             normalized_data[str(column)], scaler = perform_scaling(stock_data.loc[:, str(column)])
+#             return_scaler = scaler
+#         else:
+#             normalized_data[str(column)], scaler = perform_scaling(stock_data.loc[:, str(column)])
 
-    return normalized_data, return_scaler
+#     return normalized_data, return_scaler
 
 
-def inverse_scaling_data(scaler, data_to_rescale):
-    return scaler.inverse_transform(data_to_rescale)
-
-
-def adjust_X_train_data(X_train_data, lookback):
+def _adjust_X_train_data(X_train_data, lookback):
     tmp = []
     for i in range(0, X_train_data.shape[0]-lookback):
         a = slice(i, i+lookback)
@@ -78,28 +75,9 @@ def adjust_X_train_data(X_train_data, lookback):
     return np.array(tmp)
 
 
-def load_train_test_data_from_tickers(ticker: str, start_date: datetime, end_date: datetime, features: List,
-                          scale: bool, test_size: float, name_feature_to_predict: str) -> pd.DataFrame:
-    """
-    Give 1 ticker to scrap data
-    Give 1 or more features
-
-    @param target_variable: specify variable to predict
-
-    @return: train X and test X
-    """
-    train_set, test_set = train_test_split(
-        get_data_by_ticker(ticker, start_date, end_date, features), 
-        test_size=test_size)
-
-    if scale:
-        train_set, scaler = scale_train_data(train_set, name_feature_to_predict)
-    
-    return train_set, test_set, scaler
-
 def prepare_data_for_model(train_data, lookback):
-    X_train = adjust_X_train_data(train_data, lookback)
-    Y_train = train_data[lookback:]
+    X_train = _adjust_X_train_data(train_data, lookback)
+    Y_train = train_data[:, -1, :]
 
     return X_train, Y_train
 
