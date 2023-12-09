@@ -5,8 +5,8 @@ from sklearn.preprocessing import MinMaxScaler
 sys.path.append(os.path.join('..', 'feature_engineering'))
 sys.path.append(os.path.join('..', 'LSTM'))
 
-from feature_engineering.preprocessing import *
-from LSTM.model import *
+from preprocessing import *
+from model import *
 from save_results import *
 
 
@@ -33,8 +33,8 @@ def LSTM_model_actions(ticker, start_date, end_date, features,
                   num_features, lookback, horizon, learning_rate):
     
     data = get_data_by_ticker(ticker, start_date, end_date, features)
-    data_to_train = data[:2020]
-    data_to_test = data[2023:]
+    data_to_train = data.loc[:'2020']
+    data_to_test = data.loc['2023':]
 
     scaler, X_train, Y_train, model_history, model = _train_LSTM_model(
         data_to_train, num_features, lookback, horizon, learning_rate)
@@ -43,6 +43,7 @@ def LSTM_model_actions(ticker, start_date, end_date, features,
 
     scaled_test_data = scaler.transform(data_to_test)
     X_test, Y_test = prepare_data_for_model(scaled_test_data, lookback)
+
     Y_test_predictions = make_prediction_using_LSTM(X_test, model, scaler)
 
     return {'data': data,
@@ -59,24 +60,24 @@ def LSTM_model_actions(ticker, start_date, end_date, features,
             'Y_test_predictions': Y_test_predictions}
 
 
-def _prepare_data_for_plot_LSTM_results(X_train, Y_train_predictions, 
-                       X_test, Y_test_predictions, lookback=50):
-    trainPredictPlot = np.empty_like(X_train+lookback)
+def _prepare_data_for_plot_LSTM_results(data_to_train, data_to_test, Y_train_predictions, Y_test_predictions, lookback):
+    trainPredictPlot = np.empty_like(data_to_train)
     trainPredictPlot[:,:] = np.nan
-    trainPredictPlot[lookback:(len(X_train+lookback)), :] = Y_train_predictions
+    trainPredictPlot[lookback:(len(data_to_train)), :] = Y_train_predictions
 
-    testPredictPlot = np.empty_like(X_test+lookback)
+    testPredictPlot = np.empty_like(data_to_test)
     testPredictPlot[:,:] = np.nan
-    testPredictPlot[lookback:(len(X_test+lookback)), :] = Y_test_predictions
+    testPredictPlot[lookback:(len(data_to_test)), :] = Y_test_predictions
 
     return trainPredictPlot, testPredictPlot
 
 
-def _plot_LSTM_results(X_train, Y_train_predictions, X_test, Y_test_predictions, 
+def _plot_LSTM_results(Y_train_predictions, Y_test_predictions, 
                        data_to_train, data_to_test, ticker, model_save_dir, lookback=50):
     
-    trainPredictPlot, testPredictPlot = _prepare_data_for_plot_LSTM_results(X_train, Y_train_predictions, 
-                       X_test, Y_test_predictions, lookback)
+    trainPredictPlot, testPredictPlot = _prepare_data_for_plot_LSTM_results(
+        data_to_train, data_to_test, Y_train_predictions, Y_test_predictions, lookback)
+    
     plt.plot(data_to_train, label='Dane rzeczywiste')
     plt.plot(data_to_train.index, trainPredictPlot, label='Predykcja')
     plt.plot(data_to_test, label='Dane rzeczywiste testowe')
@@ -86,6 +87,7 @@ def _plot_LSTM_results(X_train, Y_train_predictions, X_test, Y_test_predictions,
     plt.legend()
 
     plt.savefig(os.path.join(model_save_dir, "Figures", ticker + ".png"))
+    plt.close()
 
 
 def run_predict_prices_LSTM(list_of_tickers, start_date, end_date, features,
@@ -103,5 +105,12 @@ def run_predict_prices_LSTM(list_of_tickers, start_date, end_date, features,
             X_train, Y_train, Y_train_predictions, X_test, 
             Y_test, Y_test_predictions)
         
-        _plot_LSTM_results(X_train, Y_train_predictions, X_test, Y_test_predictions, 
+        _plot_LSTM_results(Y_train_predictions, Y_test_predictions, 
                            data_to_train, data_to_test, ticker, model_save_dir, lookback)
+
+
+if __name__ == '__main__':
+    run_predict_prices_LSTM(['PKO.WA', 'PEO.WA', 'SPL.WA', 'ING.WA', 'MBK.WA'], 
+                            datetime(2016, 1, 1), datetime(2023, 11, 30),
+                            ['Close'], num_features=1, lookback=50, horizon=1, learning_rate=1e-3)
+
