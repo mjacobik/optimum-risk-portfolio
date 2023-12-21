@@ -4,12 +4,12 @@ import numpy as np
 import os, sys
 from sklearn.preprocessing import MinMaxScaler
 
-# setting path
-sys.path.append(os.path.join('..', 'Pipeline'))
+# # setting path
+# sys.path.append(os.path.join('..', 'Pipeline'))
 
-from LSTM_preprocessing import *
-from model import *
-from save_results import *
+from .LSTM_preprocessing import *
+from .model import *
+from Pipeline.save_results import *
 
 
 def _train_LSTM_model(data, num_features, lookback, horizon, learning_rate):
@@ -25,28 +25,25 @@ def _train_LSTM_model(data, num_features, lookback, horizon, learning_rate):
     return scaler, X_train, Y_train, model_history, model
 
 
-def make_prediction_using_LSTM(data, model, scaler):
+def _make_prediction_using_LSTM(data, model, scaler):
     transformed_predictions = model.predict(data)
     return scaler.inverse_transform(transformed_predictions)
 
 
-def LSTM_model_actions(data, data_to_train, data_to_test, num_features, lookback, horizon, learning_rate):
+def LSTM_model_actions(data_to_train, data_to_test, num_features, lookback, horizon, learning_rate):
     # train LSTM model
     scaler, X_train, Y_train, model_history, model = _train_LSTM_model(
         data_to_train, num_features, lookback, horizon, learning_rate)
     
-    Y_train_predictions = make_prediction_using_LSTM(X_train, model, scaler)
+    Y_train_predictions = _make_prediction_using_LSTM(X_train, model, scaler)
 
     # adjust test data and make final predictions
     scaled_test_data = scaler.transform(data_to_test)
     X_test, Y_test = prepare_data_for_model(scaled_test_data, lookback)
 
-    Y_test_predictions = make_prediction_using_LSTM(X_test, model, scaler)
+    Y_test_predictions = _make_prediction_using_LSTM(X_test, model, scaler)
 
-    return {'data': data,
-            'data_to_train': data_to_train,
-            'data_to_test': data_to_test,
-            'scaler': scaler,
+    return {'scaler': scaler,
             'model_history': model_history,
             'model' : model,
             'X_train': X_train,
@@ -95,28 +92,20 @@ def _plot_LSTM_results(Y_train_predictions, Y_test_predictions,
 
 
 
-def run_predict_prices_LSTM(list_of_tickers, data, data_to_train, data_to_test,
+def run_predict_prices_LSTM(name_of_sector, ticker, data, data_to_train, data_to_test,
                             num_features, lookback, horizon, learning_rate):
     
-    for ticker in list_of_tickers:
-        data, data_to_train, data_to_test, scaler, model_history, model, \
-        X_train, Y_train, Y_train_predictions, \
-        X_test, Y_test, Y_test_predictions = LSTM_model_actions(
-            data, data_to_train, data_to_test, num_features, lookback, horizon, learning_rate).values()
+    scaler, model_history, model, X_train, Y_train, Y_train_predictions, \
+    X_test, Y_test, Y_test_predictions = LSTM_model_actions(
+        data_to_train, data_to_test, num_features, lookback, horizon, learning_rate).values()
+
+    model_save_dir = save_LSTM_results(
+        ticker, "LSTM", name_of_sector, data, scaler, model, model_history,
+        X_train, Y_train, Y_train_predictions, X_test, 
+        Y_test, Y_test_predictions)
     
-        model_save_dir = save_LSTM_results(
-            ticker, "LSTM", data, scaler, model, model_history,
-            X_train, Y_train, Y_train_predictions, X_test, 
-            Y_test, Y_test_predictions)
-        
-        _plot_LSTM_results(Y_train_predictions, Y_test_predictions, 
-                           data_to_train, data_to_test, ticker, model_save_dir, lookback)
-
-
-if __name__ == '__main__':
-    run_predict_prices_LSTM(['PKO.WA', 'PEO.WA', 'SPL.WA', 'ING.WA', 'MBK.WA'], 
-                            datetime(2016, 1, 1), datetime(2023, 11, 30),
-                            ['Close'], num_features=1, lookback=50, horizon=1, learning_rate=1e-3)
+    _plot_LSTM_results(Y_train_predictions, Y_test_predictions, 
+                        data_to_train, data_to_test, ticker, model_save_dir, lookback)
 
 
 # zrobić wczytywanie listy tych tickerów z yamla i uruchomić LSTM od razu dla 45 featerów

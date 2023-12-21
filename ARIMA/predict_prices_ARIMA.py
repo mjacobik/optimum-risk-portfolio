@@ -5,10 +5,10 @@ import numpy as np
 from pmdarima.arima import auto_arima
 from statsmodels.tsa.arima.model import ARIMA
 
-# setting path
-sys.path.append(os.path.join('..', 'Pipeline'))
+# # setting path
+# sys.path.append(os.path.join('..', 'Pipeline'))
 
-from save_results import *
+from Pipeline.save_results import *
 
 
 def _walk_forward_validation(data_to_train, data_to_test, params):

@@ -10,9 +10,11 @@ plt.rcParams['axes.grid'] = True
 plt.rcParams.update({'font.size': 12})
 
 
-def _make_folders_for_results(ticker, name_of_method):
+def _make_folders_for_results(ticker, name_of_method, name_of_sector):
     model_save_dir = os.path.join(
+        "Results",
         name_of_method,
+        name_of_sector,
         ticker,
         datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     )
@@ -38,11 +40,11 @@ def _LSTM_model_training_history_visualise(model_history, model_save_dir):
         plt.clf()
 
 
-def save_LSTM_results(ticker, name_of_method, data, scaler, model, model_history,
+def save_LSTM_results(ticker, name_of_method, name_of_sector, data, scaler, model, model_history,
                       X_train, Y_train, Y_train_predictions,
                       X_test, Y_test, Y_test_predictions):
     
-    model_save_dir = _make_folders_for_results(ticker, name_of_method)
+    model_save_dir = _make_folders_for_results(ticker, name_of_method, name_of_sector)
         
     joblib.dump(scaler, os.path.join(model_save_dir, "Data", "scaler.pkl"))
     _LSTM_model_training_history_visualise(model_history, model_save_dir)
