@@ -86,16 +86,23 @@ def _plot_LSTM_results(Y_train_predictions, Y_test_predictions,
     plt.savefig(os.path.join(model_save_dir, "Figures", ticker + ".png"))
     plt.close()
 
+    plt.plot(data_to_test, label='Dane rzeczywiste testowe')
+    plt.plot(data_to_test.index, testPredictPlot, label='Predykcja')
+    plt.title(f"Predykcja cen akcji spółki {ticker} przy użyciu modelu LSTM")
+    plt.legend()
+    plt.savefig(os.path.join(model_save_dir, "Figures", "test_" + ticker + ".png"))
+    plt.close()
 
-def run_predict_prices_LSTM(list_of_tickers, start_date, end_date, features,
+
+
+def run_predict_prices_LSTM(list_of_tickers, data, data_to_train, data_to_test,
                             num_features, lookback, horizon, learning_rate):
     
     for ticker in list_of_tickers:
         data, data_to_train, data_to_test, scaler, model_history, model, \
         X_train, Y_train, Y_train_predictions, \
         X_test, Y_test, Y_test_predictions = LSTM_model_actions(
-            ticker, start_date, end_date, features,
-            num_features, lookback, horizon, learning_rate).values()
+            data, data_to_train, data_to_test, num_features, lookback, horizon, learning_rate).values()
     
         model_save_dir = save_LSTM_results(
             ticker, "LSTM", data, scaler, model, model_history,
@@ -111,3 +118,7 @@ if __name__ == '__main__':
                             datetime(2016, 1, 1), datetime(2023, 11, 30),
                             ['Close'], num_features=1, lookback=50, horizon=1, learning_rate=1e-3)
 
+
+# zrobić wczytywanie listy tych tickerów z yamla i uruchomić LSTM od razu dla 45 featerów
+# zrobić więcej argumentów w tej funkcji run_predict_prices_LSTM - zrobić porównanie dropoutów
+# kazać mu predykować więcej niż jeden dzień w przód i zobaczyć jak sobie radzi

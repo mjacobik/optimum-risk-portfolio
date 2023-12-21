@@ -12,8 +12,8 @@ plt.rcParams.update({'font.size': 12})
 
 def _make_folders_for_results(ticker, name_of_method):
     model_save_dir = os.path.join(
-        name_of_method + '_',
-        ticker + '_',
+        name_of_method,
+        ticker,
         datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     )
 
