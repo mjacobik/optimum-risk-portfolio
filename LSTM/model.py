@@ -1,7 +1,6 @@
 from keras.models import Sequential, load_model
 import tensorflow as tf
-from keras.layers import LSTM,Dense,Flatten, Activation,Attention,Dropout
-from keras import optimizers
+from keras.layers import LSTM, Dense, Flatten
 
 # num_companies = 1
 # lookback = 50 #How many days of the past can the model see
@@ -25,3 +24,7 @@ def build_model(num_features, lookback, horizon, learning_rate):
     model.compile(loss='Huber', optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate), metrics = ['mean_absolute_error'])
 
     return model
+
+
+def load_model():
+    pass

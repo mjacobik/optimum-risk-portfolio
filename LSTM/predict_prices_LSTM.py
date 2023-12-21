@@ -1,11 +1,13 @@
+import datetime
+import matplotlib.pyplot as plt
+import numpy as np
 import os, sys
 from sklearn.preprocessing import MinMaxScaler
 
 # setting path
-sys.path.append(os.path.join('..', 'feature_engineering'))
-sys.path.append(os.path.join('..', 'LSTM'))
+sys.path.append(os.path.join('..', 'Pipeline'))
 
-from preprocessing import *
+from LSTM_preprocessing import *
 from model import *
 from save_results import *
 
@@ -15,7 +17,6 @@ def _train_LSTM_model(data, num_features, lookback, horizon, learning_rate):
 
     scaler = MinMaxScaler(feature_range=(0,1))
     scaled_train_data = scaler.fit_transform(data)
-    # scaled_train_data, scaler = perform_scaling(data)
 
     X_train, Y_train = prepare_data_for_model(scaled_train_data, lookback)
 
@@ -29,18 +30,14 @@ def make_prediction_using_LSTM(data, model, scaler):
     return scaler.inverse_transform(transformed_predictions)
 
 
-def LSTM_model_actions(ticker, start_date, end_date, features,
-                  num_features, lookback, horizon, learning_rate):
-    
-    data = get_data_by_ticker(ticker, start_date, end_date, features)
-    data_to_train = data.loc[:'2020']
-    data_to_test = data.loc['2023':]
-
+def LSTM_model_actions(data, data_to_train, data_to_test, num_features, lookback, horizon, learning_rate):
+    # train LSTM model
     scaler, X_train, Y_train, model_history, model = _train_LSTM_model(
         data_to_train, num_features, lookback, horizon, learning_rate)
     
     Y_train_predictions = make_prediction_using_LSTM(X_train, model, scaler)
 
+    # adjust test data and make final predictions
     scaled_test_data = scaler.transform(data_to_test)
     X_test, Y_test = prepare_data_for_model(scaled_test_data, lookback)
 
