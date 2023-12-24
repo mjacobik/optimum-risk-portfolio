@@ -10,14 +10,24 @@ plt.rcParams['axes.grid'] = True
 plt.rcParams.update({'font.size': 12})
 
 
-def _make_folders_for_results(ticker, name_of_method, name_of_sector):
-    model_save_dir = os.path.join(
+def _make_folders_for_results(log_transform, ticker, name_of_method, name_of_sector):
+    if log_transform:
+        model_save_dir = os.path.join(
         "Results",
         name_of_method,
         name_of_sector,
         ticker,
+        'transformed',
         datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    )
+        )
+    else:
+        model_save_dir = os.path.join(
+            "Results",
+            name_of_method,
+            name_of_sector,
+            ticker,
+            datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        )
 
     os.makedirs(model_save_dir, exist_ok=True)
     os.makedirs(os.path.join(model_save_dir, "Data"), exist_ok=True)
@@ -40,11 +50,11 @@ def _LSTM_model_training_history_visualise(model_history, model_save_dir):
         plt.clf()
 
 
-def save_LSTM_results(ticker, name_of_method, name_of_sector, data, scaler, model, model_history,
+def save_LSTM_results(log_transform, ticker, name_of_method, name_of_sector, data, scaler, model, model_history,
                       X_train, Y_train, Y_train_predictions,
                       X_test, Y_test, Y_test_predictions):
     
-    model_save_dir = _make_folders_for_results(ticker, name_of_method, name_of_sector)
+    model_save_dir = _make_folders_for_results(log_transform, ticker, name_of_method, name_of_sector)
         
     joblib.dump(scaler, os.path.join(model_save_dir, "Data", "scaler.pkl"))
     _LSTM_model_training_history_visualise(model_history, model_save_dir)
@@ -58,6 +68,22 @@ def save_LSTM_results(ticker, name_of_method, name_of_sector, data, scaler, mode
 
     np.save(os.path.join(model_save_dir, "Data", "x_test.npy"), np.array(X_test))
     np.save(os.path.join(model_save_dir, "Data", "y_test.npy"), np.array(Y_test))
+    np.save(os.path.join(model_save_dir, "Data", "y_test_predictions.npy"), np.array(Y_test_predictions))
+
+    return model_save_dir
+
+
+def save_inverse_log_results(log_transform, ticker, name_of_method, name_of_sector,
+                             data, data_to_train, data_to_test, Y_train_predictions, Y_test_predictions):
+    
+    model_save_dir = _make_folders_for_results(log_transform, ticker, name_of_method, name_of_sector)
+
+    np.save(os.path.join(model_save_dir, "Data", "data.npy"), np.array(data))
+    np.save(os.path.join(model_save_dir, "Data", "data_to_train.npy"), np.array(data_to_train))
+    np.save(os.path.join(model_save_dir, "Data", "data_to_test.npy"), np.array(data_to_test))
+    
+    np.save(os.path.join(model_save_dir, "Data", "y_train_predictions.npy"), np.array(Y_train_predictions))
+
     np.save(os.path.join(model_save_dir, "Data", "y_test_predictions.npy"), np.array(Y_test_predictions))
 
     return model_save_dir

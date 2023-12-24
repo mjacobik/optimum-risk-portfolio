@@ -13,11 +13,11 @@ num_neurons_dense1 = 1
 num_features = 1
 
 
-def build_model(num_features, lookback, horizon, learning_rate):
+def build_model(num_features, lookback, horizon, learning_rate, dropout):
     model = Sequential()
 
-    model.add(LSTM(units = num_neurons_L1, input_shape=(lookback,num_features), return_sequences=True, activation = 'relu', dropout=0.3))
-    model.add(LSTM(num_neurons_L2, activation = 'relu', dropout=0.3, return_sequences=False))
+    model.add(LSTM(units = num_neurons_L1, input_shape=(lookback,num_features), return_sequences=True, activation = 'relu', dropout=dropout))
+    model.add(LSTM(num_neurons_L2, activation = 'relu', dropout=dropout, return_sequences=False))
     model.add(Flatten())
     model.add(Dense(horizon, activation = 'sigmoid'))
 
