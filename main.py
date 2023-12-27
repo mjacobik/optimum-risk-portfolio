@@ -5,14 +5,14 @@ from ARIMA import *
 from Pipeline import *
 
 
-log_transform=True
+log_transform=False
 name_of_sector = 'wig-banki' # będzie się zmieniać
 ticker = 'PKO.WA' # będzie się zmieniać
 start_date = datetime(2016, 1, 1)
 end_date = datetime(2023, 11, 30)
 features_list = ['Close']
 lookback = 50
-dropout = 0.3
+dropout = 0.0
 
 
 def run_LSTM_based_model(data, data_to_train, data_to_test, name_of_sector, ticker, dropout):

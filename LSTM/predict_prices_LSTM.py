@@ -20,8 +20,8 @@ def _train_LSTM_model(data, num_features, lookback, horizon, learning_rate, drop
     scaled_train_data = scaler.fit_transform(data)
 
     X_train, Y_train = prepare_data_for_model(scaled_train_data, lookback)
-
-    model_history = model.fit(X_train, Y_train, epochs=60, batch_size=64, verbose=2)
+    
+    model_history = model.fit(X_train, Y_train, epochs=3, batch_size=64, verbose=2, validation_split=0.33)
 
     return scaler, X_train, Y_train, model_history, model
 
@@ -123,13 +123,16 @@ def run_predict_prices_LSTM(log_transform, name_of_sector, ticker, data, data_to
     if log_transform:
         # transform data
         transformed_data, data_to_train, data_to_test = transform_and_split_data(data)
+        data_to_be_saved = transformed_data
+    else:
+        data_to_be_saved = data
 
     scaler, model_history, model, X_train, Y_train, Y_train_predictions, \
     X_test, Y_test, Y_test_predictions = LSTM_model_actions(data_to_train, data_to_test, 
         num_features, lookback, horizon, learning_rate, dropout).values()
 
     model_save_dir = save_LSTM_results(
-        log_transform, ticker, "LSTM", name_of_sector, transformed_data, scaler, model, model_history,
+        log_transform, ticker, "LSTM", name_of_sector, data_to_be_saved, scaler, model, model_history,
         X_train, Y_train, Y_train_predictions, X_test, 
         Y_test, Y_test_predictions)
     
