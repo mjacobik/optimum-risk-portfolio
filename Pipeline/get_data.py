@@ -20,7 +20,7 @@ def get_data_by_ticker(ticker: str, start_date: datetime, end_date: datetime, fe
 
 def split_data(ticker, start_date, end_date, features_list):
     data = get_data_by_ticker(ticker, start_date, end_date, features_list)
-    data_to_train = data.loc[:'2022']
+    data_to_train = data.loc[:'2020']
     data_to_test = data.loc['2023':]
 
     return data, data_to_train, data_to_test

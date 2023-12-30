@@ -121,7 +121,7 @@ def inverse_log_transform(scaler, transformed_data, data, lookback):
     return invert_data
 
 
-def run_predict_prices_LSTM(log_transform, name_of_sector, ticker, data, data_to_train, data_to_test,
+def run_predict_prices_LSTM(log_transform, name_of_submethod, name_of_sector, ticker, data, data_to_train, data_to_test,
                             num_features, lookback, horizon, learning_rate, dropout, epochs, batch_size):
 
     if log_transform:
@@ -137,9 +137,9 @@ def run_predict_prices_LSTM(log_transform, name_of_sector, ticker, data, data_to
         num_features, lookback, horizon, learning_rate, dropout, epochs, batch_size).values()
 
     model_save_dir = save_LSTM_results(
-        log_transform, ticker, "LSTM", name_of_sector, data_to_be_saved, scaler, model, model_history,
+        log_transform, ticker, "LSTM", name_of_submethod, name_of_sector, data_to_be_saved, scaler, model, model_history,
         X_train, Y_train, Y_train_predictions, X_test, 
-        Y_test, Y_test_predictions, epochs, batch_size, dropout)
+        Y_test, Y_test_predictions, epochs, dropout)
     
     plot_LSTM_results(Y_train_predictions, Y_test_predictions, 
                         data_to_train, data_to_test, ticker, model_save_dir, lookback)
