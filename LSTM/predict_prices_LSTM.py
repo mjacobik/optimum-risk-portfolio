@@ -4,6 +4,8 @@ import numpy as np
 import os, sys
 from sklearn.preprocessing import MinMaxScaler
 
+from keras.callbacks import EarlyStopping
+
 # # setting path
 # sys.path.append(os.path.join('..', 'Pipeline'))
 
@@ -13,15 +15,17 @@ from Pipeline.save_results import *
 from Pipeline.get_data import *
 
 
-def _train_LSTM_model(data, num_features, lookback, horizon, learning_rate, dropout):
+def _train_LSTM_model(data, num_features, lookback, horizon, learning_rate, dropout,  epochs, batch_size):
     model = build_model(num_features, lookback, horizon, learning_rate, dropout)
 
     scaler = MinMaxScaler(feature_range=(0,1))
     scaled_train_data = scaler.fit_transform(data)
 
     X_train, Y_train = prepare_data_for_model(scaled_train_data, lookback)
+
+    es = EarlyStopping(monitor='loss', mode='min', verbose=2, patience=40, min_delta=2e-5, start_from_epoch = 25)
     
-    model_history = model.fit(X_train, Y_train, epochs=3, batch_size=64, verbose=2, validation_split=0.33)
+    model_history = model.fit(X_train, Y_train, epochs=epochs, batch_size=batch_size, verbose=2, validation_split=0.05, callbacks=[es])
 
     return scaler, X_train, Y_train, model_history, model
 
@@ -31,10 +35,10 @@ def _make_prediction_using_LSTM(data, model, scaler):
     return scaler.inverse_transform(transformed_predictions)
 
 
-def LSTM_model_actions(data_to_train, data_to_test, num_features, lookback, horizon, learning_rate, dropout):
+def LSTM_model_actions(data_to_train, data_to_test, num_features, lookback, horizon, learning_rate, dropout, epochs, batch_size):
     # train LSTM model
     scaler, X_train, Y_train, model_history, model = _train_LSTM_model(
-        data_to_train, num_features, lookback, horizon, learning_rate, dropout)
+        data_to_train, num_features, lookback, horizon, learning_rate, dropout, epochs, batch_size)
     
     Y_train_predictions = _make_prediction_using_LSTM(X_train, model, scaler)
 
@@ -118,9 +122,10 @@ def inverse_log_transform(scaler, transformed_data, data, lookback):
 
 
 def run_predict_prices_LSTM(log_transform, name_of_sector, ticker, data, data_to_train, data_to_test,
-                            num_features, lookback, horizon, learning_rate, dropout):
+                            num_features, lookback, horizon, learning_rate, dropout, epochs, batch_size):
 
     if log_transform:
+        original_data_to_test = data_to_test
         # transform data
         transformed_data, data_to_train, data_to_test = transform_and_split_data(data)
         data_to_be_saved = transformed_data
@@ -129,12 +134,12 @@ def run_predict_prices_LSTM(log_transform, name_of_sector, ticker, data, data_to
 
     scaler, model_history, model, X_train, Y_train, Y_train_predictions, \
     X_test, Y_test, Y_test_predictions = LSTM_model_actions(data_to_train, data_to_test, 
-        num_features, lookback, horizon, learning_rate, dropout).values()
+        num_features, lookback, horizon, learning_rate, dropout, epochs, batch_size).values()
 
     model_save_dir = save_LSTM_results(
         log_transform, ticker, "LSTM", name_of_sector, data_to_be_saved, scaler, model, model_history,
         X_train, Y_train, Y_train_predictions, X_test, 
-        Y_test, Y_test_predictions)
+        Y_test, Y_test_predictions, epochs, batch_size, dropout)
     
     plot_LSTM_results(Y_train_predictions, Y_test_predictions, 
                         data_to_train, data_to_test, ticker, model_save_dir, lookback)
@@ -142,11 +147,7 @@ def run_predict_prices_LSTM(log_transform, name_of_sector, ticker, data, data_to
     if log_transform:
         # inverse Y_train_predictions, Y_test_predictions
         Y_train_predictions = inverse_log_transform(scaler, Y_train_predictions, data, lookback)
-        Y_test_predictions = inverse_log_transform(scaler, Y_test_predictions, data, lookback)
+        Y_test_predictions = inverse_log_transform(scaler, Y_test_predictions, original_data_to_test, lookback)
         
     return Y_train_predictions, Y_test_predictions
 
-
-# zrobić wczytywanie listy tych tickerów z yamla i uruchomić LSTM od razu dla 45 featerów
-# zrobić więcej argumentów w tej funkcji run_predict_prices_LSTM - zrobić porównanie dropoutów
-# kazać mu predykować więcej niż jeden dzień w przód i zobaczyć jak sobie radzi
