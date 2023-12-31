@@ -1,0 +1,62 @@
+'WIG-budownictwo':
+  - 'BDX.WA'
+  - 'FRO.WA'
+  - 'SKA.WA'
+  - 'PXM.WA'
+  - 'MRB.WA'
+
+'WIG-nieruchomości':
+  - 'DVL.WA'
+  - 'DOM.WA'
+  - 'GTC.WA'
+  - 'MLG.WA'
+  - '1AT.WA'
+
+'WIG-media':
+  - 'WPL.WA'
+  - 'GPP.WA'
+  - 'AGO.WA'
+  - 'ATG.WA'
+  - 'KPL.WA'
+
+'WIG-banki':
+  - 'PKO.WA'
+  - 'PEO.WA'
+  - 'SPL.WA'
+  - 'ING.WA'
+  - 'MBK.WA'
+
+'WIG-informatyka':
+  - 'ACP.WA'
+  - 'TXT.WA'
+  - 'ASE.WA'
+  - 'CMR.WA'
+  - 'ABS.WA'
+
+'WIG-energia':
+  - 'PGE.WA'
+  - 'TPE.WA'
+  - 'ENA.WA'
+  - 'PEP.WA'
+  - 'CEZ.WA'
+
+'WIG20':
+  - 'PKN.WA'
+  - 'PKO.WA'
+  - 'PZU.WA'
+  - 'DNP.WA'
+  - 'PEO.WA'
+
+'mWIG40':
+  - 'ING.WA'
+  - 'BDX.WA'
+  - 'CAR.WA'
+  - 'TPE.WA'
+  - 'MIL.WA'
+
+'sWIG80':
+  - 'PEP.WA'
+  - 'ASE.WA'
+  - 'BNP.WA'
+  - 'ABE.WA'
+  - 'ABS.WA'

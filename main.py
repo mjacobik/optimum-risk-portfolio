@@ -1,4 +1,5 @@
 import datetime
+import yaml
 
 from LSTM import *
 from ARIMA import *
@@ -6,8 +7,8 @@ from Pipeline import *
 
 
 log_transform=False
-name_of_sector = 'wig-budownictwo' # będzie się zmieniać
-ticker = 'BDX.WA' # będzie się zmieniać
+# name_of_sector = 'wig-banki' # będzie się zmieniać
+# ticker = 'PKO.WA' # będzie się zmieniać
 start_date = datetime(2016, 1, 1)
 end_date = datetime(2023, 11, 30)
 features_list = ['Close']
@@ -59,13 +60,21 @@ def run_ARIMA_based_model(data_to_train, data_to_test, name_of_submethod, name_o
 
 
 if __name__ == '__main__':
-    data, data_to_train, data_to_test = split_data(
-            ticker, start_date, end_date, features_list
-    )
+    with open('config.yaml') as f:
+        ticker_dict = yaml.safe_load(f)
+    
+    for name_of_sector in ticker_dict:
+        for ticker in ticker_dict[name_of_sector]:
+            print(ticker)
 
-    run_LSTM_based_model(data, data_to_train, data_to_test, 'dropout_0_3', name_of_sector, ticker, dropout, epochs, batch_size)
-    # define name_of_submethod as BatchNormalization to add BatchNormalization to model
-    run_LSTM_based_model(data, data_to_train, data_to_test, 'BatchNormalization', name_of_sector, ticker, dropout, epochs, batch_size)
-    run_ARIMA_based_model(data_to_train, data_to_test, 'rolling_window', name_of_sector, ticker)
-    run_ARIMA_based_model(data_to_train, data_to_test, 'walk_forward_validation', name_of_sector, ticker)
+
+            data, data_to_train, data_to_test = split_data(
+                    ticker, start_date, end_date, features_list
+            )
+
+            run_LSTM_based_model(data, data_to_train, data_to_test, 'dropout_0_3', name_of_sector, ticker, dropout, epochs, batch_size)
+            # define name_of_submethod as BatchNormalization to add BatchNormalization to model
+            run_LSTM_based_model(data, data_to_train, data_to_test, 'BatchNormalization', name_of_sector, ticker, dropout, epochs, batch_size)
+            run_ARIMA_based_model(data_to_train, data_to_test, 'rolling_window', name_of_sector, ticker)
+            run_ARIMA_based_model(data_to_train, data_to_test, 'walk_forward_validation', name_of_sector, ticker)
 
