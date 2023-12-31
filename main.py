@@ -12,12 +12,16 @@ start_date = datetime(2016, 1, 1)
 end_date = datetime(2023, 11, 30)
 features_list = ['Close']
 lookback = 50
-dropout = 0.0
-epochs = 200
+dropout = 0.3
+epochs = 100
 batch_size = 64
 
 
 def run_LSTM_based_model(data, data_to_train, data_to_test, name_of_submethod, name_of_sector, ticker, dropout, epochs, batch_size):
+
+    if name_of_submethod=='BatchNormalization':
+        dropout = 0.0
+
     Y_train_predictions, Y_test_predictions = run_predict_prices_LSTM(
         log_transform = log_transform, 
         name_of_submethod = name_of_submethod,
@@ -59,7 +63,8 @@ if __name__ == '__main__':
             ticker, start_date, end_date, features_list
     )
 
-# if BatchNormalization is commented remember to change 'name_of_submethod' to dropout or sth else
+    run_LSTM_based_model(data, data_to_train, data_to_test, 'dropout_0_3', name_of_sector, ticker, dropout, epochs, batch_size)
+    # define name_of_submethod as BatchNormalization to add BatchNormalization to model
     run_LSTM_based_model(data, data_to_train, data_to_test, 'BatchNormalization', name_of_sector, ticker, dropout, epochs, batch_size)
     run_ARIMA_based_model(data_to_train, data_to_test, 'rolling_window', name_of_sector, ticker)
     run_ARIMA_based_model(data_to_train, data_to_test, 'walk_forward_validation', name_of_sector, ticker)

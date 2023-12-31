@@ -14,14 +14,15 @@ num_neurons_dense1 = 1
 num_features = 1
 
 
-def build_model(num_features, lookback, horizon, learning_rate, dropout):
+def build_model(num_features, lookback, horizon, learning_rate, dropout, name_of_submethod):
     model = Sequential()
 
     model.add(LSTM(units = num_neurons_L1, input_shape=(lookback,num_features), return_sequences=True, activation = 'relu', dropout=dropout))
     model.add(LSTM(num_neurons_L2, activation = 'relu', dropout=dropout, return_sequences=False))
     model.add(Flatten())
     model.add(Dense(horizon, activation = 'sigmoid'))
-    model.add(BatchNormalization())
+    if name_of_submethod=='BatchNormalization':
+        model.add(BatchNormalization())
 
     model.compile(loss='Huber', optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate), metrics = ['mean_absolute_error',
                                                                                                             'mse',

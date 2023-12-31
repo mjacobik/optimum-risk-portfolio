@@ -1,13 +1,9 @@
-import datetime
 import matplotlib.pyplot as plt
 import numpy as np
-import os, sys
+import os
 from sklearn.preprocessing import MinMaxScaler
 
 from keras.callbacks import EarlyStopping
-
-# # setting path
-# sys.path.append(os.path.join('..', 'Pipeline'))
 
 from .LSTM_preprocessing import *
 from .model import *
@@ -15,17 +11,18 @@ from Pipeline.save_results import *
 from Pipeline.get_data import *
 
 
-def _train_LSTM_model(data, num_features, lookback, horizon, learning_rate, dropout,  epochs, batch_size):
-    model = build_model(num_features, lookback, horizon, learning_rate, dropout)
+def _train_LSTM_model(data, num_features, lookback, horizon, learning_rate, dropout,  epochs, batch_size, name_of_submethod):
+    model = build_model(num_features, lookback, horizon, learning_rate, dropout, name_of_submethod)
 
     scaler = MinMaxScaler(feature_range=(0,1))
     scaled_train_data = scaler.fit_transform(data)
 
     X_train, Y_train = prepare_data_for_model(scaled_train_data, lookback)
 
-    es = EarlyStopping(monitor='loss', mode='min', verbose=2, patience=40, min_delta=2e-5, start_from_epoch = 25)
-    
-    model_history = model.fit(X_train, Y_train, epochs=epochs, batch_size=batch_size, verbose=2, validation_split=0.05, callbacks=[es])
+    # es = EarlyStopping(monitor='loss', mode='min', verbose=2, patience=40, min_delta=2e-5, start_from_epoch = 25)
+    # model_history = model.fit(X_train, Y_train, epochs=epochs, batch_size=batch_size, verbose=2, validation_split=0.05, callbacks=[es])
+
+    model_history = model.fit(X_train, Y_train, epochs=epochs, batch_size=batch_size, verbose=2)
 
     return scaler, X_train, Y_train, model_history, model
 
@@ -35,10 +32,10 @@ def _make_prediction_using_LSTM(data, model, scaler):
     return scaler.inverse_transform(transformed_predictions)
 
 
-def LSTM_model_actions(data_to_train, data_to_test, num_features, lookback, horizon, learning_rate, dropout, epochs, batch_size):
+def LSTM_model_actions(data_to_train, data_to_test, num_features, lookback, horizon, learning_rate, dropout, epochs, batch_size, name_of_submethod):
     # train LSTM model
     scaler, X_train, Y_train, model_history, model = _train_LSTM_model(
-        data_to_train, num_features, lookback, horizon, learning_rate, dropout, epochs, batch_size)
+        data_to_train, num_features, lookback, horizon, learning_rate, dropout, epochs, batch_size, name_of_submethod)
     
     Y_train_predictions = _make_prediction_using_LSTM(X_train, model, scaler)
 
@@ -134,7 +131,7 @@ def run_predict_prices_LSTM(log_transform, name_of_submethod, name_of_sector, ti
 
     scaler, model_history, model, X_train, Y_train, Y_train_predictions, \
     X_test, Y_test, Y_test_predictions = LSTM_model_actions(data_to_train, data_to_test, 
-        num_features, lookback, horizon, learning_rate, dropout, epochs, batch_size).values()
+        num_features, lookback, horizon, learning_rate, dropout, epochs, batch_size, name_of_submethod).values()
 
     model_save_dir = save_LSTM_results(
         log_transform, ticker, "LSTM", name_of_submethod, name_of_sector, data_to_be_saved, scaler, model, model_history,
