@@ -30,7 +30,7 @@ def transform_and_split_data(data):
     pct_returns = data.pct_change().dropna()
     transformed_data = np.log(1+pct_returns)
 
-    transformed_data_to_train = transformed_data.loc[:'2022']
+    transformed_data_to_train = transformed_data.loc[:'2020']
     transformed_data_to_test = transformed_data.loc['2023':]
 
     return transformed_data, transformed_data_to_train, transformed_data_to_test

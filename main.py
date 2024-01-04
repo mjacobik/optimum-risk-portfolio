@@ -42,11 +42,10 @@ def run_LSTM_based_model(data, data_to_train, data_to_test, name_of_submethod, n
 
     if log_transform:
         model_save_dir = save_inverse_log_results(log_transform, ticker, 'LSTM', name_of_submethod, name_of_sector,
-                             data, data_to_train, data_to_test, Y_train_predictions, Y_test_predictions, epochs, batch_size, dropout)
+                             data, data_to_train, data_to_test, Y_train_predictions, Y_test_predictions, epochs, dropout)
 
         plot_LSTM_results(Y_train_predictions, Y_test_predictions, 
                         data_to_train, data_to_test, ticker, model_save_dir, lookback, plot_inverse_prediction=True)
-
 
 
 def run_ARIMA_based_model(data_to_train, data_to_test, name_of_submethod, name_of_sector, ticker):

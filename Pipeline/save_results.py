@@ -2,9 +2,11 @@ import os
 from datetime import datetime
 import joblib
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+matplotlib.use('Agg')
 plt.rcParams['figure.figsize'] = (16,9)
 plt.rcParams['axes.grid'] = True
 plt.rcParams.update({'font.size': 12})
