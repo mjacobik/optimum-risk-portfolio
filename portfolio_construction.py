@@ -55,28 +55,67 @@ def load_data_results(files):
     return dict
 
 
-def _save_portfolio_plot(results_frame, max_sharpe_port, min_vol_port):
-    model_save_dir = os.path.join("Results", 
-                                  name_of_sector)
+def calculate_real_and_predicted_by_LSTM_returns(destination_dataframe, data, y_test_predictions, ticker):
+    # Zwroty używając predykcji - cena dzisiejsza znana, na jutro predykcja
+    data_test_values = data[-(len(y_test_predictions)+1):]
+    # per_growth = [(((y - x) * 100) / x) for x, y in zip(data_test_values, y_test_predictions)]
+    per_growth = (y_test_predictions - data_test_values[:-1]) / data_test_values[:-1] * 100
+    destination_dataframe[ticker+'_returns'] = per_growth.flatten()
 
-    print(model_save_dir)
+    # Wariancja na cenach rzeczywistych - przygotowanie danych
+    prices_for_var = data[-(len(data_test_values) + 50):].flatten()
+    data_for_var = pd.DataFrame(prices_for_var, columns = ['data'])
+    data_for_var = data_for_var['data'].pct_change().dropna() * 100
+    data_for_var = data_for_var.reset_index(drop=True)
+
+    # vars = [np.var(data_for_var[i:i+50]) for i in range(len(data_for_var)-50)]
+    destination_dataframe[ticker+'_real_data_ret'] = data_for_var
+
+    return destination_dataframe
+
+
+def _save_portfolio_plot_and_weights(results_frame, max_sharpe_port, min_vol_port, predicted_portfolio):
+    if predicted_portfolio:
+        model_save_dir_plots = os.path.join("Results", "Portfolios", name_of_sector, name_of_method, "Plots")
+        model_save_dir_data = os.path.join("Results", "Portfolios", name_of_sector, name_of_method, "Data")
+    else:
+        model_save_dir_plots = os.path.join("Results", "Portfolios", name_of_sector, "Plots")
+        model_save_dir_data = os.path.join("Results", "Portfolios", name_of_sector, "Data")
+
+    os.makedirs(model_save_dir_plots, exist_ok=True)
+    os.makedirs(model_save_dir_data, exist_ok=True)
+
+    results_frame.to_csv(os.path.join(model_save_dir_data, "portfolio_" + name_of_sector + name_of_method + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".csv"))
+    
     #create scatter plot coloured by Sharpe Ratio
     plt.scatter(results_frame.stdev,results_frame.ret,c=results_frame.sharpe,cmap='RdYlBu')
     plt.xlabel('Ryzyko')
-    plt.ylabel('Oczekiwany zwrot')
+    plt.ylabel('Oczekiwany procentowy zwrot')
     plt.colorbar()
     #plot red star to highlight position of portfolio with highest Sharpe Ratio
     plt.scatter(max_sharpe_port[1],max_sharpe_port[0],marker=(5,1,0),color='r',s=700)
     #plot green star to highlight position of minimum variance portfolio
     plt.scatter(min_vol_port[1],min_vol_port[0],marker=(5,1,0),color='g',s=700)
-    plt.title(f"Portfel inwestycyjny dla sektora {name_of_sector} skonstruowany przy użyciu modelu {name_of_method}", fontsize = 15)
-    plt.savefig(os.path.join(model_save_dir, "portfolio_" + name_of_sector + name_of_method + ".png"))
+    if predicted_portfolio:
+        plt.title(f"Warianty portfeli dla sektora {name_of_sector} skonstruowane przy użyciu predykcji z modelu {name_of_method}", fontsize = 15)
+    else:
+        plt.title(f"Warianty portfeli dla sektora {name_of_sector} skonstruowane przy użyciu danych rzeczywistych)", fontsize = 15)
+    plt.xlim(left=0)
+    if max(results_frame.ret) < 0:
+        plt.ylim(top = 0)
+    elif min(results_frame.ret) > 0:
+        plt.ylim(bottom = 0)
+    plt.savefig(os.path.join(model_save_dir_plots, "portfolio_" + name_of_sector + name_of_method + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".png"))
     plt.clf()
 
 
-def construct_daily_portfolio(sector_data_for_portfel, predicted_portfolio=True):
+def construct_daily_portfolio(sector_data_for_portfel, day, predicted_portfolio=True):
+    column_names = list(sector_data_for_portfel.filter(regex=".*_returns.*").columns.values)
+    slice_object = slice(3)
+    ticker_list = [i[slice_object] for i in column_names]
+
     num_portfolios = 10000
-    results = np.zeros((4+5-1,num_portfolios))
+    results = np.zeros((len(ticker_list) + 3, num_portfolios))
     for i in range(num_portfolios):
         #select random weights for portfolio holdings
         weights = np.array(np.random.random(5))
@@ -84,12 +123,12 @@ def construct_daily_portfolio(sector_data_for_portfel, predicted_portfolio=True)
         weights /= np.sum(weights)
 
         #calculate portfolio return and volatility
-        real_returns = sector_data_for_portfel.filter(regex=".*_real_data_ret.*")[0:50]
+        real_returns = sector_data_for_portfel.filter(regex=".*_real_data_ret.*")[day:50+day]
         cov_matrix = real_returns.cov()
         if predicted_portfolio:
-            stocks_returns = sector_data_for_portfel.filter(regex=".*_returns.*").iloc[0, :]
+            stocks_returns = sector_data_for_portfel.filter(regex=".*_returns.*").iloc[day, :]
         else:
-            stocks_returns = sector_data_for_portfel.filter(regex=".*_real_data_ret.*").iloc[0, :]
+            stocks_returns = sector_data_for_portfel.filter(regex=".*_real_data_ret.*").iloc[day, :]
         portfolio_return = np.sum(stocks_returns * weights)
         portfolio_std_dev = np.sqrt(np.dot(weights.T,np.dot(cov_matrix, weights)))
 
@@ -103,11 +142,6 @@ def construct_daily_portfolio(sector_data_for_portfel, predicted_portfolio=True)
         for j in range(len(weights)):
             results[j+3,i] = weights[j]
 
-
-    column_names = list(sector_data_for_portfel.filter(regex=".*_returns.*").columns.values)
-    slice_object = slice(3)
-    ticker_list = [i[slice_object] for i in column_names]
-
     #convert results array to Pandas DataFrame
     results_frame = pd.DataFrame(results.T,columns=['ret','stdev','sharpe',ticker_list[0],ticker_list[1],ticker_list[2],ticker_list[3], ticker_list[4]])
     #locate position of portfolio with highest Sharpe Ratio
@@ -115,10 +149,9 @@ def construct_daily_portfolio(sector_data_for_portfel, predicted_portfolio=True)
     #locate positon of portfolio with minimum standard deviation
     min_vol_port = results_frame.iloc[results_frame['stdev'].idxmin()]
     
-    _save_portfolio_plot(results_frame, max_sharpe_port, min_vol_port)
+    _save_portfolio_plot_and_weights(results_frame, max_sharpe_port, min_vol_port, predicted_portfolio)
 
     print(max_sharpe_port)
-    return max_sharpe_port
 
 
 if __name__ == '__main__':
@@ -140,22 +173,13 @@ if __name__ == '__main__':
                     data = data_to_test
                     y_test_predictions = predictions        
 
-                # Zwroty używając predykcji - cena dzisiejsza znana, na jutro predykcja
-                data_test_values = data[-(len(y_test_predictions)+1):]
-                # per_growth = [(((y - x) * 100) / x) for x, y in zip(data_test_values, y_test_predictions)]
-                per_growth = (y_test_predictions - data_test_values[:-1]) / data_test_values[:-1]
-                sector_data_for_portfel[ticker+'_returns'] = per_growth.flatten()
-
-                # Wariancja na cenach rzeczywistych - przygotowanie danych
-                prices_for_var = data[-(len(data_test_values) + 50):].flatten()
-                data_for_var = pd.DataFrame(prices_for_var, columns = ['data'])
-                data_for_var = data_for_var['data'].pct_change().dropna()
-                data_for_var = data_for_var.reset_index(drop=True)
-
-                # vars = [np.var(data_for_var[i:i+50]) for i in range(len(data_for_var)-50)]
-                sector_data_for_portfel[ticker+'_real_data_ret'] = data_for_var
+            sector_data_for_portfel  = calculate_real_and_predicted_by_LSTM_returns(sector_data_for_portfel, data, y_test_predictions, ticker)
         
-        construct_daily_portfolio(sector_data_for_portfel)
+        print(sector_data_for_portfel)
+        for day in range(len(sector_data_for_portfel)):
+            construct_daily_portfolio(sector_data_for_portfel, day, predicted_portfolio=True)
+            construct_daily_portfolio(sector_data_for_portfel, day, predicted_portfolio=False)
+
 
                 
 

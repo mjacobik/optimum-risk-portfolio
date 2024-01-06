@@ -86,11 +86,13 @@ if __name__ == '__main__':
                 # returns = pd.DataFrame(y_test).pct_change().dropna()
                 # returns['datetime'] = data_for_index[data_for_index.slice_indexer("2023-03-15", "2023-11-30")]
 
+
                 # 230 to rozmiar zbioru testowego - wszystkich dni kalendarzowych w nim
                 arr = np.zeros(230)
-                # LSTM
-                # arr = np.where(arr==0, np.nan, arr).reshape(-1,1)
-                arr = np.where(arr==0, np.nan, arr)
+                if name_of_method == 'LSTM':
+                    arr = np.where(arr==0, np.nan, arr).reshape(-1,1)
+                if name_of_method == 'ARIMA':
+                    arr = np.where(arr==0, np.nan, arr)
                 arr[50:] = y_test_predictions
 
                 if ticker == 'BDX.WA':
