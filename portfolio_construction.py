@@ -4,9 +4,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import joblib, yaml
+import warnings
 
 from Pipeline.get_data import *
 
+warnings.simplefilter(action='ignore', category=Warning)
+
+DATETIME_RUN = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 # plotting parameters
 plt.rcParams['figure.figsize'] = (16,9)
@@ -28,7 +32,7 @@ name_of_submethod = 'walk_forward_validation'
 # \Results\wig-budownictwo\BDX.WA\LSTM\BatchNormalization\2023-12-31_01-05-32
 def _max_datetime_folder(name_of_sector, ticker):
     """ Returns name of folder with results that date of its creation is the latest """
-    rootdir = f'Results\{name_of_sector}\{ticker}\{name_of_method}\{name_of_submethod}'
+    rootdir = os.path.join('Results', name_of_sector, ticker, name_of_method, name_of_submethod)
 
     for root, dirs, files in os.walk(rootdir, topdown=False):
         datetime_dirs = []
@@ -77,18 +81,18 @@ def calculate_real_and_predicted_by_LSTM_returns(sector_pred_returns_for_portfel
     return sector_pred_returns_for_portfel, sector_returns_for_portfel
 
 
-def _save_portfolio_plot_and_weights(results_frame, max_sharpe_port, min_vol_port, predicted_portfolio):
+def _save_portfolio_plot_and_weights(results_frame, max_sharpe_port, min_vol_port, predicted_portfolio, day_num):
     if predicted_portfolio:
-        model_save_dir_plots = os.path.join("Results", "Portfolios", name_of_sector, name_of_method, "Plots", datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
-        model_save_dir_data = os.path.join("Results", "Portfolios", name_of_sector, name_of_method, "Data", datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+        model_save_dir_plots = os.path.join("Results", "Portfolios", DATETIME_RUN, name_of_sector, name_of_method, "Plots")
+        model_save_dir_data = os.path.join("Results", "Portfolios", DATETIME_RUN, name_of_sector, name_of_method, "Data")
     else:
-        model_save_dir_plots = os.path.join("Results", "Portfolios", name_of_sector, "Real_Data", "Plots", datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
-        model_save_dir_data = os.path.join("Results", "Portfolios", name_of_sector, "Real_Data", "Data", datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+        model_save_dir_plots = os.path.join("Results", "Portfolios", DATETIME_RUN, name_of_sector, "Real_Data", "Plots")
+        model_save_dir_data = os.path.join("Results", "Portfolios", DATETIME_RUN, name_of_sector, "Real_Data", "Data")
 
     os.makedirs(model_save_dir_plots, exist_ok=True)
     os.makedirs(model_save_dir_data, exist_ok=True)
 
-    results_frame.to_csv(os.path.join(model_save_dir_data, "portfolio_" + name_of_sector + name_of_method + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".csv"))
+    results_frame.to_csv(os.path.join(model_save_dir_data, "portfolio_" + name_of_sector + name_of_method + str(day_num) + ".csv"))
     
     #create scatter plot coloured by Sharpe Ratio
     plt.scatter(results_frame.stdev,results_frame.ret,c=results_frame.sharpe,cmap='RdYlBu')
@@ -103,12 +107,7 @@ def _save_portfolio_plot_and_weights(results_frame, max_sharpe_port, min_vol_por
         plt.title(f"Warianty portfeli dla sektora {name_of_sector} skonstruowane przy użyciu predykcji z modelu {name_of_method}", fontsize = 15)
     else:
         plt.title(f"Warianty portfeli dla sektora {name_of_sector} skonstruowane przy użyciu danych rzeczywistych)", fontsize = 15)
-    plt.xlim(left=0)
-    if max(results_frame.ret) < 0:
-        plt.ylim(top = 0)
-    elif min(results_frame.ret) > 0:
-        plt.ylim(bottom = 0)
-    plt.savefig(os.path.join(model_save_dir_plots, "portfolio_" + name_of_sector + name_of_method + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".png"))
+    plt.savefig(os.path.join(model_save_dir_plots, "portfolio_" + name_of_sector + name_of_method + str(day_num) + ".png"))
     plt.clf()
 
 
@@ -117,7 +116,7 @@ def construct_daily_portfolio(sector_pred_returns_for_portfel, sector_returns_fo
     slice_object = slice(3)
     ticker_list = [i[slice_object] for i in column_names]
 
-    num_portfolios = 10
+    num_portfolios = 10000
     results = np.zeros((len(ticker_list) + 3, num_portfolios))
     for i in range(num_portfolios):
         #select random weights for portfolio holdings
@@ -152,9 +151,9 @@ def construct_daily_portfolio(sector_pred_returns_for_portfel, sector_returns_fo
     #locate positon of portfolio with minimum standard deviation
     min_vol_port = results_frame.iloc[results_frame['stdev'].idxmin()]
     
-    _save_portfolio_plot_and_weights(results_frame, max_sharpe_port, min_vol_port, predicted_portfolio)
+    _save_portfolio_plot_and_weights(results_frame, max_sharpe_port, min_vol_port, predicted_portfolio, day)
 
-    print(max_sharpe_port)
+    # print(max_sharpe_port)
 
 
 if __name__ == '__main__':
@@ -163,17 +162,29 @@ if __name__ == '__main__':
         ticker_dict = yaml.safe_load(f)
 
     for name_of_sector in ticker_dict:
+        print("Starting for sector:", name_of_sector)
         sector_returns_for_portfel = pd.DataFrame()
         sector_pred_returns_for_portfel = pd.DataFrame()
         for ticker in ticker_dict[name_of_sector]:
             target_datetime_dir = _max_datetime_folder(name_of_sector, ticker)
-            target_dir_path = f'Results\{name_of_sector}\{ticker}\{name_of_method}\{name_of_submethod}\{target_datetime_dir}\Data'
+            target_dir_path = os.path.join('Results', name_of_sector, ticker, name_of_method, name_of_submethod, target_datetime_dir, 'Data')
 
             for root, dirs, files in os.walk(target_dir_path, topdown=False):
                 if name_of_method == 'LSTM':
-                    data, x_test, x_train, y_test, y_test_predictions, y_train, y_train_predictions = load_data_results(files).values()
+                    _data_results_dict = load_data_results(files)
+                    data, x_test, x_train, y_test, y_test_predictions, y_train, y_train_predictions = [
+                        _data_results_dict[name]
+                        for name in
+                        ["data.npy", "x_test.npy", "x_train.npy", "y_test.npy", "y_test_predictions.npy", "y_train.npy", "y_train_predictions.npy"]
+                    ]
+
                 else:
-                    data_to_test, data_to_train, params, predictions = load_data_results(files).values()
+                    _data_results_dict = load_data_results(files)
+                    data_to_test, data_to_train, params, predictions = [
+                        _data_results_dict[name]
+                        for name in
+                        ["data_to_test.npy", "data_to_train.npy", "params.npy", "predictions.npy"]
+                    ]
                     y_test_predictions = predictions
                     data = get_data_by_ticker(ticker, start_date, end_date, ['Close']).values
                     while data.shape == (0,1):
@@ -183,8 +194,9 @@ if __name__ == '__main__':
             sector_pred_returns_for_portfel, sector_returns_for_portfel = calculate_real_and_predicted_by_LSTM_returns(sector_pred_returns_for_portfel, 
                                                                                                                        sector_returns_for_portfel, data, y_test_predictions, ticker)
 
-
         for day in range(len(sector_pred_returns_for_portfel)):
+            if day % 100 == 0:
+                print(f"Day {day} of {len(sector_pred_returns_for_portfel)} for sector {name_of_sector}")
             construct_daily_portfolio(sector_pred_returns_for_portfel, sector_returns_for_portfel, day, predicted_portfolio=True)
             construct_daily_portfolio(sector_pred_returns_for_portfel, sector_returns_for_portfel, day, predicted_portfolio=False)
 
