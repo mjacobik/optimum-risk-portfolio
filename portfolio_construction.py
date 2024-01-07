@@ -57,12 +57,12 @@ def load_data_results(files):
     return dict
 
 
-def calculate_real_and_predicted_by_LSTM_returns(destination_dataframe, data, y_test_predictions, ticker):
+def calculate_real_and_predicted_by_LSTM_returns(sector_pred_returns_for_portfel, sector_returns_for_portfel, data, y_test_predictions, ticker):
     # Zwroty używając predykcji - cena dzisiejsza znana, na jutro predykcja
-    data_test_values = data[-(len(y_test_predictions)+1):]
+    data_test_values = data[-(len(y_test_predictions)+1):].flatten()
     # per_growth = [(((y - x) * 100) / x) for x, y in zip(data_test_values, y_test_predictions)]
     per_growth = (y_test_predictions - data_test_values[:-1]) / data_test_values[:-1] * 100
-    destination_dataframe[ticker+'_returns'] = per_growth.flatten()
+    sector_pred_returns_for_portfel[ticker+'_returns'] = per_growth.flatten()
 
     # Wariancja na cenach rzeczywistych - przygotowanie danych
     prices_for_var = data[-(len(data_test_values) + 50):].flatten()
@@ -71,9 +71,9 @@ def calculate_real_and_predicted_by_LSTM_returns(destination_dataframe, data, y_
     data_for_var = data_for_var.reset_index(drop=True)
 
     # vars = [np.var(data_for_var[i:i+50]) for i in range(len(data_for_var)-50)]
-    destination_dataframe[ticker+'_real_data_ret'] = data_for_var
+    sector_returns_for_portfel[ticker+'_real_data_ret'] = data_for_var
 
-    return destination_dataframe
+    return sector_pred_returns_for_portfel, sector_returns_for_portfel
 
 
 def _save_portfolio_plot_and_weights(results_frame, max_sharpe_port, min_vol_port, predicted_portfolio):
@@ -111,8 +111,8 @@ def _save_portfolio_plot_and_weights(results_frame, max_sharpe_port, min_vol_por
     plt.clf()
 
 
-def construct_daily_portfolio(sector_data_for_portfel, day, predicted_portfolio=True):
-    column_names = list(sector_data_for_portfel.filter(regex=".*_returns.*").columns.values)
+def construct_daily_portfolio(sector_pred_returns_for_portfel, sector_returns_for_portfel, day, predicted_portfolio=True):
+    column_names = list(sector_pred_returns_for_portfel.filter(regex=".*_returns.*").columns.values)
     slice_object = slice(3)
     ticker_list = [i[slice_object] for i in column_names]
 
@@ -125,12 +125,12 @@ def construct_daily_portfolio(sector_data_for_portfel, day, predicted_portfolio=
         weights /= np.sum(weights)
 
         #calculate portfolio return and volatility
-        real_returns = sector_data_for_portfel.filter(regex=".*_real_data_ret.*")[day:50+day]
+        real_returns = sector_returns_for_portfel.filter(regex=".*_real_data_ret.*")[day:50+day]
         cov_matrix = real_returns.cov()
         if predicted_portfolio:
-            stocks_returns = sector_data_for_portfel.filter(regex=".*_returns.*").iloc[day, :]
+            stocks_returns = sector_pred_returns_for_portfel.filter(regex=".*_returns.*").iloc[day, :]
         else:
-            stocks_returns = sector_data_for_portfel.filter(regex=".*_real_data_ret.*").iloc[day, :]
+            stocks_returns = sector_returns_for_portfel.filter(regex=".*_real_data_ret.*").iloc[50+day, :]
         portfolio_return = np.sum(stocks_returns * weights)
         portfolio_std_dev = np.sqrt(np.dot(weights.T,np.dot(cov_matrix, weights)))
 
@@ -162,7 +162,8 @@ if __name__ == '__main__':
         ticker_dict = yaml.safe_load(f)
 
     for name_of_sector in ticker_dict:
-        sector_data_for_portfel = pd.DataFrame()
+        sector_returns_for_portfel = pd.DataFrame()
+        sector_pred_returns_for_portfel = pd.DataFrame()
         for ticker in ticker_dict[name_of_sector]:
             target_datetime_dir = _max_datetime_folder(name_of_sector, ticker)
             target_dir_path = f'Results\{name_of_sector}\{ticker}\{name_of_method}\{name_of_submethod}\{target_datetime_dir}\Data'
@@ -175,13 +176,13 @@ if __name__ == '__main__':
                     y_test_predictions = predictions
                     data = get_data_by_ticker(ticker, start_date, end_date, ['Close']).values   
 
-            sector_data_for_portfel  = calculate_real_and_predicted_by_LSTM_returns(sector_data_for_portfel, data, y_test_predictions, ticker)
-            print(len(y_test_predictions))
+            sector_pred_returns_for_portfel, sector_returns_for_portfel = calculate_real_and_predicted_by_LSTM_returns(sector_pred_returns_for_portfel, 
+                                                                                                                       sector_returns_for_portfel, data, y_test_predictions, ticker)
 
-        print(sector_data_for_portfel)
-        # for day in range(len(sector_data_for_portfel)):
-        #     construct_daily_portfolio(sector_data_for_portfel, day, predicted_portfolio=True)
-        #     construct_daily_portfolio(sector_data_for_portfel, day, predicted_portfolio=False)
+
+        for day in range(len(sector_pred_returns_for_portfel)):
+            construct_daily_portfolio(sector_pred_returns_for_portfel, sector_returns_for_portfel, day, predicted_portfolio=True)
+            construct_daily_portfolio(sector_pred_returns_for_portfel, sector_returns_for_portfel, day, predicted_portfolio=False)
 
 
                 
