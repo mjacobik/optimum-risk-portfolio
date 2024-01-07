@@ -18,8 +18,10 @@ start_date = datetime.datetime(2016, 1, 1)
 end_date = datetime.datetime(2023, 11, 30)
 data_for_index = get_data_by_ticker('BDX.WA', start_date, end_date, ['Close']).index
 
-name_of_method = 'LSTM'
-name_of_submethod = 'BatchNormalization'
+# name_of_method = 'LSTM'
+# name_of_submethod = 'BatchNormalization'
+name_of_method = 'ARIMA'
+name_of_submethod = 'walk_forward_validation'
 
 
 # structure of folders
@@ -76,11 +78,11 @@ def calculate_real_and_predicted_by_LSTM_returns(destination_dataframe, data, y_
 
 def _save_portfolio_plot_and_weights(results_frame, max_sharpe_port, min_vol_port, predicted_portfolio):
     if predicted_portfolio:
-        model_save_dir_plots = os.path.join("Results", "Portfolios", name_of_sector, name_of_method, "Plots")
-        model_save_dir_data = os.path.join("Results", "Portfolios", name_of_sector, name_of_method, "Data")
+        model_save_dir_plots = os.path.join("Results", "Portfolios", name_of_sector, name_of_method, "Plots", datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+        model_save_dir_data = os.path.join("Results", "Portfolios", name_of_sector, name_of_method, "Data", datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
     else:
-        model_save_dir_plots = os.path.join("Results", "Portfolios", name_of_sector, "Plots")
-        model_save_dir_data = os.path.join("Results", "Portfolios", name_of_sector, "Data")
+        model_save_dir_plots = os.path.join("Results", "Portfolios", name_of_sector, "Real_Data", "Plots", datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+        model_save_dir_data = os.path.join("Results", "Portfolios", name_of_sector, "Real_Data", "Data", datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
 
     os.makedirs(model_save_dir_plots, exist_ok=True)
     os.makedirs(model_save_dir_data, exist_ok=True)
@@ -170,15 +172,16 @@ if __name__ == '__main__':
                     data, x_test, x_train, y_test, y_test_predictions, y_train, y_train_predictions = load_data_results(files).values()
                 else:
                     data_to_test, data_to_train, params, predictions = load_data_results(files).values()
-                    data = data_to_test
-                    y_test_predictions = predictions        
+                    y_test_predictions = predictions
+                    data = get_data_by_ticker(ticker, start_date, end_date, ['Close']).values   
 
             sector_data_for_portfel  = calculate_real_and_predicted_by_LSTM_returns(sector_data_for_portfel, data, y_test_predictions, ticker)
-        
+            print(len(y_test_predictions))
+
         print(sector_data_for_portfel)
-        for day in range(len(sector_data_for_portfel)):
-            construct_daily_portfolio(sector_data_for_portfel, day, predicted_portfolio=True)
-            construct_daily_portfolio(sector_data_for_portfel, day, predicted_portfolio=False)
+        # for day in range(len(sector_data_for_portfel)):
+        #     construct_daily_portfolio(sector_data_for_portfel, day, predicted_portfolio=True)
+        #     construct_daily_portfolio(sector_data_for_portfel, day, predicted_portfolio=False)
 
 
                 
