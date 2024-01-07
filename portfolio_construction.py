@@ -163,43 +163,46 @@ if __name__ == '__main__':
         ticker_dict = yaml.safe_load(f)
 
     for name_of_sector in ticker_dict:
-        print("Starting for sector:", name_of_sector)
-        sector_returns_for_portfel = pd.DataFrame()
-        sector_pred_returns_for_portfel = pd.DataFrame()
-        for ticker in ticker_dict[name_of_sector]:
-            target_datetime_dir = _max_datetime_folder(name_of_sector, ticker)
-            target_dir_path = os.path.join('Results', name_of_sector, ticker, name_of_method, name_of_submethod, target_datetime_dir, 'Data')
+        try:
+            print("Starting for sector:", name_of_sector)
+            sector_returns_for_portfel = pd.DataFrame()
+            sector_pred_returns_for_portfel = pd.DataFrame()
+            for ticker in ticker_dict[name_of_sector]:
+                target_datetime_dir = _max_datetime_folder(name_of_sector, ticker)
+                target_dir_path = os.path.join('Results', name_of_sector, ticker, name_of_method, name_of_submethod, target_datetime_dir, 'Data')
 
-            for root, dirs, files in os.walk(target_dir_path, topdown=False):
-                if name_of_method == 'LSTM':
-                    _data_results_dict = load_data_results(files)
-                    data, x_test, x_train, y_test, y_test_predictions, y_train, y_train_predictions = [
-                        _data_results_dict[name]
-                        for name in
-                        ["data.npy", "x_test.npy", "x_train.npy", "y_test.npy", "y_test_predictions.npy", "y_train.npy", "y_train_predictions.npy"]
-                    ]
+                for root, dirs, files in os.walk(target_dir_path, topdown=False):
+                    if name_of_method == 'LSTM':
+                        _data_results_dict = load_data_results(files)
+                        data, x_test, x_train, y_test, y_test_predictions, y_train, y_train_predictions = [
+                            _data_results_dict[name]
+                            for name in
+                            ["data.npy", "x_test.npy", "x_train.npy", "y_test.npy", "y_test_predictions.npy", "y_train.npy", "y_train_predictions.npy"]
+                        ]
 
-                else:
-                    _data_results_dict = load_data_results(files)
-                    data_to_test, data_to_train, params, predictions = [
-                        _data_results_dict[name]
-                        for name in
-                        ["data_to_test.npy", "data_to_train.npy", "params.npy", "predictions.npy"]
-                    ]
-                    y_test_predictions = predictions
-                    data = get_data_by_ticker(ticker, start_date, end_date, ['Close']).values
-                    while data.shape == (0,1):
-                        print(f"Retrying to get data for ticker {ticker}")
-                        data = get_data_by_ticker(ticker, start_date, end_date, ['Close']).values 
+                    else:
+                        _data_results_dict = load_data_results(files)
+                        data_to_test, data_to_train, params, predictions = [
+                            _data_results_dict[name]
+                            for name in
+                            ["data_to_test.npy", "data_to_train.npy", "params.npy", "predictions.npy"]
+                        ]
+                        y_test_predictions = predictions
+                        data = get_data_by_ticker(ticker, start_date, end_date, ['Close']).values
+                        while data.shape == (0,1):
+                            print(f"Retrying to get data for ticker {ticker}")
+                            data = get_data_by_ticker(ticker, start_date, end_date, ['Close']).values 
 
-            sector_pred_returns_for_portfel, sector_returns_for_portfel = calculate_real_and_predicted_by_LSTM_returns(sector_pred_returns_for_portfel, 
-                                                                                                                       sector_returns_for_portfel, data, y_test_predictions, ticker)
+                sector_pred_returns_for_portfel, sector_returns_for_portfel = calculate_real_and_predicted_by_LSTM_returns(sector_pred_returns_for_portfel, 
+                                                                                                                        sector_returns_for_portfel, data, y_test_predictions, ticker)
 
-        for day in range(len(sector_pred_returns_for_portfel)):
-            if day % 100 == 0:
-                print(f"Day {day} of {len(sector_pred_returns_for_portfel)} for sector {name_of_sector}")
-            construct_daily_portfolio(sector_pred_returns_for_portfel, sector_returns_for_portfel, day, predicted_portfolio=True)
-            construct_daily_portfolio(sector_pred_returns_for_portfel, sector_returns_for_portfel, day, predicted_portfolio=False)
+            for day in range(len(sector_pred_returns_for_portfel)):
+                if day % 100 == 0:
+                    print(f"Day {day} of {len(sector_pred_returns_for_portfel)} for sector {name_of_sector}")
+                construct_daily_portfolio(sector_pred_returns_for_portfel, sector_returns_for_portfel, day, predicted_portfolio=True)
+                construct_daily_portfolio(sector_pred_returns_for_portfel, sector_returns_for_portfel, day, predicted_portfolio=False)
+        except:
+            pass
 
 
                 
