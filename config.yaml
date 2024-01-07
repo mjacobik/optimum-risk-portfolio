@@ -5,7 +5,14 @@
   - 'PXM.WA'
   - 'MRB.WA'
 
-'WIG-nieruchomości':
+'WIG-banki':
+  - 'PKO.WA'
+  - 'PEO.WA'
+  - 'SPL.WA'
+  - 'ING.WA'
+  - 'MBK.WA'
+
+'WIG-nieruchomosci':
   - 'DVL.WA'
   - 'DOM.WA'
   - 'GTC.WA'
@@ -18,13 +25,6 @@
   - 'AGO.WA'
   - 'ATG.WA'
   - 'KPL.WA'
-
-'WIG-banki':
-  - 'PKO.WA'
-  - 'PEO.WA'
-  - 'SPL.WA'
-  - 'ING.WA'
-  - 'MBK.WA'
 
 'WIG-informatyka':
   - 'ACP.WA'
