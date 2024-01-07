@@ -61,7 +61,8 @@ def calculate_real_and_predicted_by_LSTM_returns(sector_pred_returns_for_portfel
     # Zwroty używając predykcji - cena dzisiejsza znana, na jutro predykcja
     data_test_values = data[-(len(y_test_predictions)+1):].flatten()
     # per_growth = [(((y - x) * 100) / x) for x, y in zip(data_test_values, y_test_predictions)]
-    per_growth = (y_test_predictions - data_test_values[:-1]) / data_test_values[:-1] * 100
+    per_growth = (y_test_predictions.flatten() - data_test_values[:-1]) / data_test_values[:-1] * 100
+
     sector_pred_returns_for_portfel[ticker+'_returns'] = per_growth.flatten()
 
     # Wariancja na cenach rzeczywistych - przygotowanie danych
@@ -116,7 +117,7 @@ def construct_daily_portfolio(sector_pred_returns_for_portfel, sector_returns_fo
     slice_object = slice(3)
     ticker_list = [i[slice_object] for i in column_names]
 
-    num_portfolios = 10000
+    num_portfolios = 10
     results = np.zeros((len(ticker_list) + 3, num_portfolios))
     for i in range(num_portfolios):
         #select random weights for portfolio holdings
@@ -174,7 +175,10 @@ if __name__ == '__main__':
                 else:
                     data_to_test, data_to_train, params, predictions = load_data_results(files).values()
                     y_test_predictions = predictions
-                    data = get_data_by_ticker(ticker, start_date, end_date, ['Close']).values   
+                    data = get_data_by_ticker(ticker, start_date, end_date, ['Close']).values
+                    while data.shape == (0,1):
+                        print(f"Retrying to get data for ticker {ticker}")
+                        data = get_data_by_ticker(ticker, start_date, end_date, ['Close']).values 
 
             sector_pred_returns_for_portfel, sector_returns_for_portfel = calculate_real_and_predicted_by_LSTM_returns(sector_pred_returns_for_portfel, 
                                                                                                                        sector_returns_for_portfel, data, y_test_predictions, ticker)
