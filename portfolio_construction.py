@@ -100,9 +100,10 @@ def _save_portfolio_plot_and_weights(results_frame, max_sharpe_port, min_vol_por
     plt.ylabel('Oczekiwany procentowy zwrot')
     plt.colorbar()
     #plot red star to highlight position of portfolio with highest Sharpe Ratio
-    plt.scatter(max_sharpe_port[1],max_sharpe_port[0],marker=(5,1,0),color='r',s=700)
+    plt.scatter(max_sharpe_port[1],max_sharpe_port[0],marker=(5,1,0),color='r',s=500, label="Portfel optymalny")
     #plot green star to highlight position of minimum variance portfolio
-    plt.scatter(min_vol_port[1],min_vol_port[0],marker=(5,1,0),color='g',s=700)
+    plt.scatter(min_vol_port[1],min_vol_port[0],marker=(5,1,0),color='g',s=500, label="Portfel o minimalnym ryzyku")
+    plt.legend()
     if predicted_portfolio:
         plt.title(f"Warianty portfeli dla sektora {name_of_sector} skonstruowane przy użyciu predykcji z modelu {name_of_method}", fontsize = 15)
     else:
