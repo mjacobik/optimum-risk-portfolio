@@ -145,7 +145,7 @@ def construct_daily_portfolio(sector_pred_returns_for_portfel, sector_returns_fo
         #store results in results array
         results[0,i] = portfolio_return
         results[1,i] = portfolio_std_dev
-        #store Sharpe Ratio (return / volatility) - risk free rate element excluded for simplicity
+        #store Sharpe Ratio (return / volatility) - risk free rate element is equal to 0.01
         results[2,i] = (results[0,i] - 0.01) / results[1,i]
 
         #iterate through the weight vector and add data to results array
@@ -220,27 +220,48 @@ def _get_percentage_daily_profits_from_portfolio(
     # portfolio_value_day_after: np.ndarray(shape=(180,)) = (portfolio_array * real_data_array[1:, :]).sum(axis=1)
     # portfolio_profit: np.ndarray(shape=(180,)) = (portfolio_value_day_after - portfolio_value_day_invest) / portfolio_value_day_invest
         
-    real_data_prices_pct_change: np.ndarray(shape=(180,5)) = (real_data_array[1:, :] - real_data_array[:-1, :]) / real_data_array[:-1, :]
+    real_data_prices_pct_change: np.ndarray(shape=(180,5)) = (real_data_array[1:, :] - real_data_array[:-1, :]) / real_data_array[:-1, :] * 100
     portfolio_profit: np.ndarray(shape=(180,)) = (real_data_prices_pct_change * portfolio_array).sum(axis=1)
 
     return portfolio_profit
     
 
 def _plot_portfolio_profits(x: np.ndarray, *ys: List[np.ndarray], sector: str, legends: List[str]):
-    colors = ["#e66101", "#2b83ba", "#ca0020"]
+    colors = ["#4dac26", "#ca0020", "#2b83ba"]
     for y, color in zip(ys, colors):
         print("Plot y shape", y.shape)
-        plt.plot(x, y, color, alpha=0.7)
-    
+        if color == "#ca0020":
+            plt.plot(x, y, color, alpha=0.45)
+        else:
+            plt.plot(x, y, color, alpha=0.7)
 
-    plt.title("Dzienne procentowe zwroty z inwestycji w sektor " + sector + " w oparciu o skonstruowane portfele")
+    plt.title("Dzienne procentowe zwroty z inwestycji w portfele skonstruowane z 5 wybranych spółek \n sklasyfikowanych do indeksu " + sector, fontsize = 20)
     plt.ylabel("Procentowy zwrot z inwestycji")
     plt.xlabel("Data")
     plt.legend(legends)
     bottom, top = plt.ylim()
-    if top > 0.2:
-        plt.ylim(top=0.21)
+    if top > 20:
+        plt.ylim(top=20) 
+        plt.ylim(bottom=-5)
     plt.savefig(os.path.join("Results", "tmp_plots_portfolio", sector + ".png"))
+    plt.clf()
+
+
+def _plot_portfolio_cumsum(x: np.ndarray, *ys: List[np.ndarray], sector: str, legends: List[str]):
+    colors = ["#4dac26", "#ca0020", "#2b83ba"]
+    for y, color in zip(ys, colors):
+        print("Plot y shape", y.shape)
+        plt.plot(x, y, color, alpha=0.9)
+    
+
+    plt.title("Skumulowane codzienne procentowe zwroty z inwestycji w portfele skonstruowane \n z 5 wybranych spółek sklasyfikowanych do indeksu " + sector, fontsize = 20)
+    plt.ylabel("Procentowy zwrot z inwestycji")
+    plt.xlabel("Data")
+    plt.legend(legends)
+    bottom, top = plt.ylim()
+    if top > 200:
+        plt.ylim(top=220)
+    plt.savefig(os.path.join("Results", "cumulative_returns", sector + "_limit.png"))
     plt.clf()
 
 
@@ -292,9 +313,24 @@ def compare_returns_from_portfoilo():
         
         _plot_portfolio_profits(data_for_index[-180:], 
                                 percentage_profits_best, percentage_profits_lstm, percentage_profits_arima, 
-                                sector=name_of_sector, legends=["Idealna informacja o rynku", "Ceny przewidziane za pomocą modelu LSTM", "Ceny przewidziane za pomocą modelu ARIMA"])
+                                sector=name_of_sector, legends=["Portfele konstruowane na danych rzeczywistych",
+                                                                "Portfele konstruowane w oparciu o predykcje modelu LSTM", 
+                                                                "Portfele konstruowane w oparciu o predykcje ARIMA"])
 
+        cumsum_profits_arima = (percentage_profits_arima).cumsum()
+        cumsum_profits_lstm = (percentage_profits_lstm).cumsum()
+        cumsum_profits_best = (percentage_profits_best).cumsum()
 
+        print(name_of_sector)
+        print("Portfele konstruowane w oparciu o predykcje ARIMA: " , cumsum_profits_arima)
+        print("Portfele konstruowane w oparciu o predykcje modelu LSTM: " , cumsum_profits_lstm)
+        print("Portfele konstruowane na danych rzeczywistych:" , cumsum_profits_best)
+
+        _plot_portfolio_cumsum(data_for_index[-180:], 
+                                cumsum_profits_best, cumsum_profits_lstm, cumsum_profits_arima, 
+                                sector=name_of_sector, legends=["Portfele konstruowane na danych rzeczywistych",
+                                                                "Portfele konstruowane w oparciu o predykcje modelu LSTM", 
+                                                                "Portfele konstruowane w oparciu o predykcje ARIMA"])
 
 if __name__ == '__main__':
     compare_returns_from_portfoilo()
